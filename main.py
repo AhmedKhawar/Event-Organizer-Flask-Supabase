@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session  # FIX
 import os
 
 from supabase import create_client
@@ -22,9 +22,9 @@ def mainPage():
 
 @app.route("/profile")
 def profile():
-    response = supabase.auth.get_session()
-    if response:
-        organizer_id = response.user.id
+    user = session.get("user")  # FIX
+    if user:
+        organizer_id = user["id"]  # FIX
         response = supabase.table("Events").select("*").eq("organizers_id", organizer_id).execute()
         data = response.data
         return render_template("profile.html", data=data)
@@ -39,13 +39,18 @@ def login():
         password = request.form["password"]
         try:
             response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-            if response:
+            if response.user:  # FIX
+                session["user"] = {  # FIX
+                    "id": response.user.id,
+                    "email": response.user.email,
+                    "access_token": response.session.access_token,
+                    "refresh_token": response.session.refresh_token,
+                }
                 return redirect(url_for("mainPage"))
         except Exception as e:
             flash(str(e), "error")
             return redirect(url_for("login"))
     return render_template("login.html")
-
 
 
 @app.route("/signup", methods=["GET", "POST"])
@@ -85,17 +90,15 @@ def signup():
 
 @app.route("/logout", methods=["GET","POST"])
 def logout():
-    if request.method == "GET":
-        return redirect(url_for("profile"))
-    else:
-        response = supabase.auth.sign_out()
-        return redirect(url_for("mainPage"))
+    session.pop("user", None)  # FIX
+    flash("Logged out", "success")  # FIX
+    return redirect(url_for("mainPage"))  # FIX
 
 
 @app.route("/organize", methods=["GET", "POST"])
 def organize():
-    response = supabase.auth.get_session()
-    if response:
+    user = session.get("user")  # FIX
+    if user:
         return render_template("organize.html")
     else:
         return redirect(url_for("login"))
@@ -111,32 +114,36 @@ def submitEvent():
     date = request.form["eventDate"]
     duration = request.form["duration"]
     genre = request.form["genre"]
-    response = supabase.auth.get_session()
-    organizer_id = response.user.id
-    response = supabase.table("Events").insert({"date": date, "time": time, "duration": duration, "genre": genre, "event_name": name, "venue": venue, "organizers_id": organizer_id}).execute()
+    user = session.get("user")  # FIX
+    organizer_id = user["id"]  # FIX
+    response = supabase.table("Events").insert({
+        "date": date, "time": time, "duration": duration,
+        "genre": genre, "event_name": name,
+        "venue": venue, "organizers_id": organizer_id
+    }).execute()
     return redirect(url_for("mainPage"))
-
 
 
 @app.route("/enroll", methods=["GET","POST"])
 def enroll():
     if request.method == "POST":
-        response = supabase.auth.get_session()
-        if response:
+        user = session.get("user")  # FIX
+        if user:
             event_id = request.form["event_id"]
-            user_id = response.user.id
+            user_id = user["id"]  # FIX
             check = supabase.table("Attendees").select("id").eq("user_id", user_id).eq("event_id", event_id).execute()
             checkdata = check.data
             if checkdata != []:
                 flash("Already Enrolled")
                 return redirect(url_for("registered"))
             else:
-                response = supabase.table("Attendees").insert({"event_id": event_id, "user_id": user_id}).execute()
-                return redirect(url_for("registered")) # edit this to registered / enrolled event page
+                supabase.table("Attendees").insert({"event_id": event_id, "user_id": user_id}).execute()
+                return redirect(url_for("registered"))
         else:
             return redirect(url_for("login"))
     else:
         return redirect(url_for("mainPage"))
+
 
 @app.route("/attendee", methods=["GET", "POST"])
 def attendee():
@@ -148,16 +155,19 @@ def attendee():
     else:
         return redirect(url_for("profile"))
 
+
 @app.route("/registered")
 def registered():
-    response = supabase.auth.get_session()
-    if response:
-         id = response.user.id
-         response = supabase.table("Attendees").select("event_id, Events(event_name, venue, genre, date, time, duration)").eq("user_id", id).execute()
+    user = session.get("user")  # FIX
+    if user:
+         id = user["id"]  # FIX
+         response = supabase.table("Attendees").select(
+             "event_id, Events(event_name, venue, genre, date, time, duration)"
+         ).eq("user_id", id).execute()
          data = response.data
          return render_template("registered.html", data=data)      
     else:
-        return(redirect("login"))
+        return redirect(url_for("login"))
 
 
 if __name__ == "__main__":
