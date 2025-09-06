@@ -232,11 +232,11 @@
   </head>
   <body>
     <nav>
-      <div class="logo">Event Organizer</div>
+      <a href="/"><div class="logo">Event Organizer</div> </a>
       <ul>
         <!-- ✅ Replaced "My Profile" with Home -->
-        <li><a href="/">Home</a></li>
         <li><a href="/organize">Organize an Event</a></li>
+        <li><a href="/registered">Registered events</a></li>
         <li>
           <form action="/logout" method="POST" style="display: inline">
             <button type="submit" class="logout">Logout</button>
@@ -264,7 +264,7 @@
             </div>
             <div class="detail-item">
               <div class="detail-label">Duration</div>
-              <div class="detail-value">{{content["duration"]}}</div>
+              <div class="detail-value">{{content["duration"]}} hours</div>
             </div>
             <div class="detail-item">
               <div class="detail-label">Genre</div>
