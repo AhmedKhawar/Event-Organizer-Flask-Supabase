@@ -254,11 +254,11 @@
   </head>
   <body>
     <nav>
-      <div class="logo">Event Organizer</div>
+      <a href="/"> <div class="logo">Event Organizer</div> </a>
       <ul>
         <li><a href="/organize">Organize an Event</a></li>
+        <li><a href="/registered">Registered events</a></li>
         <li><a href="/profile">My Profile</a></li>
-        <li><a href="/registered">Your registered events</a></li>
       </ul>
     </nav>
 
@@ -282,7 +282,7 @@
             </div>
             <div class="detail-item">
               <div class="detail-label">Duration</div>
-              <div class="detail-value">{{content["duration"]}} <p>hours</p></div>
+              <div class="detail-value">{{content["duration"]}} hours</div>
             </div>
             <div class="detail-item">
               <div class="detail-label">Genre</div>
@@ -313,4 +313,3 @@
     </div>
   </body>
 </html>
-
